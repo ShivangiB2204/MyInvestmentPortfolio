@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#16233d">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icons/icon-192.png">
+<title>Portfolio Tracker</title>
+<style>
+html,body{margin:0;background:#0b1220}
+#portfolio-app{max-width:1100px;margin:auto;min-height:100vh;padding:18px;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#eef2f7;background:#0b1220;box-sizing:border-box}
+#portfolio-app *{box-sizing:border-box}
+.grid{display:grid;gap:12px}.stats{grid-template-columns:repeat(4,1fr)}.two{grid-template-columns:1.4fr 1fr}
+.card{background:#111c2f;border:1px solid #293750;border-radius:16px;padding:18px;box-shadow:0 8px 24px #0002;margin-bottom:12px}
+.muted,.small{color:#9aa6b8;font-size:13px}.value{font-size:25px;font-weight:700;margin-top:5px}.gain{font-size:13px;color:#60a5fa;margin-top:6px}
+.row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid #293750;font-size:14px}.row:last-child{border:0}
+.controls{display:flex;gap:8px;flex-wrap:wrap}.pill,.btn{border:1px solid #293750;background:#111c2f;color:#eef2f7;border-radius:9px;padding:10px 13px;min-height:42px;cursor:pointer}.pill.active{background:#16233d;border-color:#3b5d8f;font-weight:650}
+.btn{background:#244b7a;border:0;color:#fff;font-weight:650}.import-link{border:0;background:none;color:#60a5fa;padding:0;min-height:0;font:inherit;cursor:pointer;text-decoration:underline}
+.bar{height:9px;background:#18263d;border-radius:10px;overflow:hidden;margin:8px 0}.bar i{display:block;height:100%;background:#3b82f6}
+.chart{width:100%;height:230px;display:block}.upload{border:1.5px dashed #536581;border-radius:14px;padding:18px;text-align:center;background:#3b82f60f}
+@media(max-width:760px){#portfolio-app{padding:14px}.stats{grid-template-columns:repeat(2,1fr)}.two{grid-template-columns:1fr}.value{font-size:21px}.controls{display:grid;grid-template-columns:repeat(4,1fr)}.pill{width:100%;padding:9px 5px}}
+</style>
+</head>
+<body>
+<div id="portfolio-app">
+<header style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:20px">
+<div><div style="font-size:27px;font-weight:750">Portfolio Tracker</div><div class="muted">Privacy-first · portfolio data stays on this device</div></div>
+<div class="controls"><button class="pill active" data-range="1Y">1Y</button><button class="pill" data-range="3Y">3Y</button><button class="pill" data-range="5Y">5Y</button><button class="pill" data-range="ALL">All</button></div>
+</header>
+
+<section class="card" style="border-color:#315b92;background:linear-gradient(135deg,#3b82f61f,#8b7cf612)">
+<b>🔒 Your portfolio stays local</b><div class="small" style="margin-top:5px">Statements are processed in your browser and saved only in this device's IndexedDB. Nothing is uploaded by this app.</div>
+</section>
+
+<section class="grid stats">
+<div class="card"><div class="muted">MF portfolio value</div><div class="value" id="mfValue">—</div><div class="gain"><button class="import-link" id="mfCardImport">Import CAS</button></div></div>
+<div class="card"><div class="muted">PPF</div><div class="value" id="ppfValue">—</div><div class="gain"><button class="import-link" id="ppfCardImport">Import PPF statement</button></div></div>
+<div class="card"><div class="muted">EPF</div><div class="value" id="epfValue">—</div><div class="gain"><button class="import-link" id="epfCardImport">Import EPF passbook</button></div></div>
+<div class="card"><div class="muted">Cash + FD</div><div class="value" id="cashValue">—</div><div class="gain"><button class="import-link" id="cashCardImport">Import bank/FD statement</button></div></div>
+</section>
+
+<section class="card">
+<div style="display:flex;justify-content:space-between;gap:12px"><div><b>Portfolio value history</b><div class="muted">Local snapshots</div></div><div class="muted" id="rangeLabel">1 year</div></div>
+<svg id="chart" class="chart" viewBox="0 0 900 230" preserveAspectRatio="none"></svg>
+<div class="small" id="historyText" style="text-align:center">Import a CAS to create your first local snapshot.</div>
+</section>
+
+<section class="grid two">
+<div class="card"><b>Asset allocation</b>
+<div class="row"><span>Equity</span><b id="equityPct">—</b></div><div class="bar"><i id="equityBar" style="width:0%"></i></div>
+<div class="row"><span>Debt</span><b id="debtPct">—</b></div><div class="bar"><i id="debtBar" style="width:0%"></i></div>
+</div>
+<div class="card"><b>Portfolio totals</b>
+<div class="row"><span>Total tracked assets</span><b id="grandTotal">—</b></div>
+<div class="row"><span>Active MF schemes</span><b id="schemeCount">—</b></div>
+<div class="row"><span>Latest update</span><b id="latestDate">—</b></div>
+</div>
+</section>
+
+<section class="grid two">
+<div class="card"><b>Retirement assets</b>
+<div class="row"><span>PPF</span><b id="ppf2">—</b></div>
+<div class="row"><span>EPF</span><b id="epf2">—</b></div>
+</div>
+<div class="card"><b>Cash & fixed deposits</b>
+<div class="row"><span>Savings accounts</span><b id="savingsValue">—</b></div>
+<div class="row"><span>Fixed deposits</span><b id="fdValue">—</b></div>
+<div class="row"><span>Total cash / FD</span><b id="cash2">—</b></div>
+</div>
+</section>
+
+<section class="card">
+<b>Update portfolio</b>
+<div class="upload" style="margin-top:12px">
+<div class="small" style="margin-bottom:12px">Select an official statement. It is processed locally and never uploaded.</div>
+<button class="btn" id="mfBtn">Import MF Central CAS</button><input id="mfFile" type="file" accept=".pdf,application/pdf" hidden>
+<div style="height:8px"></div>
+<button class="btn" id="ppfBtn">Import PPF statement</button><input id="ppfFile" type="file" accept=".pdf,application/pdf,.csv" hidden>
+<div style="height:8px"></div>
+<button class="btn" id="epfBtn">Import EPF passbook</button><input id="epfFile" type="file" accept=".pdf,application/pdf,.csv" hidden>
+<div style="height:8px"></div>
+<button class="btn" id="savingsBtn">Import savings statement</button><input id="savingsFile" type="file" accept=".pdf,application/pdf,.csv,.xlsx" hidden>
+<div style="height:8px"></div>
+<button class="btn" id="fdBtn">Import FD statement / certificate</button><input id="fdFile" type="file" accept=".pdf,application/pdf,.csv,.xlsx" hidden>
+<div id="status" class="small" style="margin-top:12px"></div>
+<button class="pill" id="clearBtn" style="margin-top:12px">Delete local portfolio data</button>
+</div>
+</section>
+
+<section class="card"><b>Install on your phone</b><div class="small" style="margin-top:5px">Use your browser's Install app / Add to Home screen option.</div><button class="btn" id="installBtn" style="display:none;margin-top:12px">Install Portfolio Tracker</button><div id="installStatus" class="small" style="margin-top:8px"></div></section>
+<div class="small">No portfolio values, statements, PANs, folio numbers or transaction data are embedded in this published page.</div>
+
+<script>
+const DB="portfolio-tracker-v3",STORE="snapshots";let db,installEvent;
+const $=id=>document.getElementById(id);
+function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open(DB,1);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains(STORE))r.result.createObjectStore(STORE,{keyPath:"id",autoIncrement:true})};r.onsuccess=()=>{db=r.result;res(db)};r.onerror=()=>rej(r.error)})}
+function all(){return new Promise((res,rej)=>{const q=db.transaction(STORE).objectStore(STORE).getAll();q.onsuccess=()=>res(q.result||[]);q.onerror=()=>rej(q.error)})}
+function save(x){return new Promise((res,rej)=>{const q=db.transaction(STORE,"readwrite").objectStore(STORE).add(x);q.onsuccess=()=>res();q.onerror=()=>rej(q.error)})}
+function money(n){return Number.isFinite(n)?"₹"+(n>=1e7?(n/1e7).toFixed(2)+"Cr":n>=1e5?(n/1e5).toFixed(2)+"L":Math.round(n).toLocaleString("en-IN")):"—"}
+function number(s){if(!s)return NaN;return parseFloat(String(s).replace(/[₹,%\s,]/g,"").replace(/\(([^)]+)\)/,"-$1"))}
+function firstDate(t){return(t.match(/(\d{1,2}[\/-]\d{1,2}[\/-]\d{4}|\d{1,2}\s+[A-Za-z]{3}\s+\d{4})/)||[])[1]||new Date().toLocaleDateString("en-IN")}
+async function loadPdf(){if(window.pdfjsLib)return;await new Promise((ok,no)=>{const s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";s.onload=ok;s.onerror=()=>no(new Error("PDF parser could not be loaded. Reload once with an internet connection."));document.head.appendChild(s)});pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js")}
+async function textOf(file){await loadPdf();const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;let t="";for(let i=1;i<=pdf.numPages;i++){const tc=await(await pdf.getPage(i)).getTextContent();t+=tc.items.map(x=>x.str).join(" ")+"\n"}return t.replace(/\u00a0/g," ").replace(/\s+/g," ")}
+function labelled(t,labels){for(const l of labels){const m=t.match(new RegExp(l+"[^0-9₹]{0,180}(?:₹|Rs\\.?|INR)?\\s*([0-9][0-9,]*(?:\\.[0-9]{1,2})?)","i"));if(m)return number(m[1])}return NaN}
+function casValue(t){
+  let v=labelled(t,["Total Market Value","Market Value","Current Value"]);
+  if(Number.isFinite(v))return v;
+  const vals=[...t.matchAll(/(?:₹|Rs\.?|INR)\s*([0-9][0-9,]*(?:\.[0-9]{1,2})?)/gi)].map(m=>number(m[1])).filter(v=>Number.isFinite(v)&&v>=1000);
+  return vals.length?Math.max(...vals):NaN;
+}
+async function importStatement(file,type){
+  $("status").textContent="Reading "+type+" locally…";
+  try{
+    const t=await textOf(file);let value=NaN;
+    if(type==="MF")value=casValue(t);
+    if(type==="PPF")value=labelled(t,["Closing Balance","Account Balance","Available Balance","Total Balance","Balance"]);
+    if(type==="EPF"){value=labelled(t,["Closing Balance","Total PF Balance","Closing PF Balance","Total Balance"]);if(!Number.isFinite(value)){const a=labelled(t,["Employee Share"]),b=labelled(t,["Employer Share"]);if(Number.isFinite(a)||Number.isFinite(b))value=(a||0)+(b||0)}}
+    if(type==="Savings")value=labelled(t,["Available Balance","Closing Balance","Account Balance","Current Balance","Ledger Balance"]);
+    if(type==="FD")value=labelled(t,["Maturity Value","Current Value","Principal Amount","Deposit Amount","Amount","Balance"]);
+    if(!Number.isFinite(value))throw new Error(type==="MF"?"Could not identify the CAS market value. If this is the same MF Central CAS you previously used, please send the PDF here so I can tune the parser to its exact layout.":("Could not identify a clearly labelled "+type+" balance in this statement."));
+    await save({type,value,date:firstDate(t),createdAt:Date.now()});
+    $("status").textContent=type+" imported locally. Nothing was uploaded.";await render();
+  }catch(e){$("status").textContent=e.message||"Could not parse this statement."}
+}
+function wire(btn,file,type){$(btn).onclick=()=>$(file).click();$(file).onchange=()=>{const f=$(file).files&&$(file).files[0];if(f)importStatement(f,type)}}
+function drawChart(vals){const svg=$("chart");if(!vals.length){svg.innerHTML="";return}if(vals.length===1){svg.innerHTML='<line x1="35" y1="220" x2="875" y2="220" stroke="currentColor" opacity=".12"/><circle cx="875" cy="120" r="6" fill="#3b82f6"/>';return}const min=Math.min(...vals),max=Math.max(...vals),r=max-min||1,pts=vals.map((v,i)=>`${35+i*840/(vals.length-1)},${220-(v-min)/r*170}`).join(" ");svg.innerHTML=`<polyline points="${pts}" fill="none" stroke="#3b82f6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="875" cy="${220-(vals.at(-1)-min)/r*170}" r="6" fill="#60a5fa"/>`}
+async function render(){
+ const s=await all(),mf=s.filter(x=>x.type==="MF").sort((a,b)=>a.createdAt-b.createdAt),ppf=s.filter(x=>x.type==="PPF").sort((a,b)=>a.createdAt-b.createdAt).at(-1),epf=s.filter(x=>x.type==="EPF").sort((a,b)=>a.createdAt-b.createdAt).at(-1),sav=s.filter(x=>x.type==="Savings").reduce((a,x)=>a+x.value,0),fd=s.filter(x=>x.type==="FD").reduce((a,x)=>a+x.value,0),m=mf.at(-1);
+ $("mfValue").textContent=money(m?.value);$("ppfValue").textContent=money(ppf?.value);$("epfValue").textContent=money(epf?.value);$("cashValue").textContent=money(sav+fd);$("ppf2").textContent=money(ppf?.value);$("epf2").textContent=money(epf?.value);$("savingsValue").textContent=money(sav);$("fdValue").textContent=money(fd);$("cash2").textContent=money(sav+fd);
+ const total=(m?.value||0)+(ppf?.value||0)+(epf?.value||0)+sav+fd;$("grandTotal").textContent=total?money(total):"—";
+ $("schemeCount").textContent=m?.schemeCount||"—";$("latestDate").textContent=(s.sort((a,b)=>b.createdAt-a.createdAt)[0]||{}).date||"—";
+ const eq=m?.equityPct,debt=m?.debtPct;if(Number.isFinite(eq)){$("equityPct").textContent=eq.toFixed(2)+"%";$("equityBar").style.width=eq+"%"}if(Number.isFinite(debt)){$("debtPct").textContent=debt.toFixed(2)+"%";$("debtBar").style.width=debt+"%"}
+ const vals=mf.map(x=>x.value).filter(Number.isFinite);drawChart(vals);$("historyText").textContent=vals.length?`${vals.length} MF snapshot${vals.length===1?"":"s"} stored locally.`:"Import a CAS to create your first local snapshot.";
+}
+wire("mfBtn","mfFile","MF");wire("ppfBtn","ppfFile","PPF");wire("epfBtn","epfFile","EPF");wire("savingsBtn","savingsFile","Savings");wire("fdBtn","fdFile","FD");
+$("mfCardImport").onclick=()=>$("mfFile").click();$("ppfCardImport").onclick=()=>$("ppfFile").click();$("epfCardImport").onclick=()=>$("epfFile").click();$("cashCardImport").onclick=()=>$("savingsFile").click();
+$("clearBtn").onclick=async()=>{if(confirm("Delete all portfolio data stored on this device?")){await new Promise((res,rej)=>{const q=db.transaction(STORE,"readwrite").objectStore(STORE).clear();q.onsuccess=res;q.onerror=rej});location.reload()}};
+document.querySelectorAll("[data-range]").forEach(b=>b.onclick=()=>{document.querySelectorAll("[data-range]").forEach(x=>x.classList.remove("active"));b.classList.add("active");$("rangeLabel").textContent=b.dataset.range==="ALL"?"all time":b.dataset.range.toLowerCase()+" view"});
+addEventListener("beforeinstallprompt",e=>{e.preventDefault();installEvent=e;$("installBtn").style.display="inline-block"});$("installBtn").onclick=async()=>{if(installEvent){installEvent.prompt();await installEvent.userChoice;installEvent=null;$("installBtn").style.display="none"}else $("installStatus").textContent="Use browser menu → Install app / Add to Home screen."};
+openDB().then(render).catch(()=>$("status").textContent="Local storage is unavailable in this browser.");
+</script>
+</div>
+</body>
+</html>
